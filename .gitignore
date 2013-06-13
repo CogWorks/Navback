@@ -1,0 +1,4 @@
+data
+*.xfasl
+*.lisp~
+.DS_Store
