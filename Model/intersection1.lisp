@@ -20,6 +20,7 @@
  ?retrieval> state free
   =temporal> isa time ticks =ticks
 ==>
+ -visual-location>
  !bind! =tm (check-intersection-tm =ticks)
  =goal> state find-arrow
  =contextual> intersection =tm
@@ -36,6 +37,7 @@
    =visual-location> isa rec-location kind rec name bottom-right  
   ?retrieval> state free
 ==>
+ -visual-location>
  -aural>
  !eval! (incf rtotal)
  +retrieval> isa turn-dir
@@ -142,6 +144,7 @@
  =goal> isa arrow-task state turn-done
  =contextual> isa mnt
 ==>
+ -visual-location>
  =contextual> init nil jitter t
  -aural>
  =goal> state find-arrow)

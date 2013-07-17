@@ -5,18 +5,18 @@
 
 (set-visloc-default-fct '(isa visual-location kind dummy))
 
-(sgp :v t ;"~/navback-trace.lisp" 
+(sgp ;:v t ;"~/navback-trace.lisp" 
      :cycle-hook log-prod-fire :needs-mouse nil :ol nil ; :DECLARATIVE-FINST-SPAN 30 :DECLARATIVE-NUM-FINSTS 6 
      :visual-movement-tolerance 5.0  :blc 3.0 :act nil :crt nil   
-     :esc t :trace-detail high :er t  :show-focus nil  :lf 0.5 :sact t
+     :esc t :trace-detail low :er t  :show-focus nil  :lf 0.5 :sact t
      :do-not-harvest imaginal :do-not-harvest contextual
      :MOTOR-FEATURE-PREP-TIME 0
      :time-master-start-increment 1.0
      :TIME-MULT 1.0001 :trace-filter my-trace-filter
-     :conflict-set-hook cs-hook
+     :conflict-set-hook cs-hook :DIGIT-DETECT-DELAY .150
 )
 
-(sgp-fct `(:bll ,(first *params*) :ans ,(second *params*)))
+(sgp-fct `(:bll ,(first *params*) :ans ,(second *params*) :v ,(fourth *params*)))
 
 (set-audloc-default :location external :attended nil)
 

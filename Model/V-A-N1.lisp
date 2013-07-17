@@ -9,6 +9,9 @@
  +imaginal> isa turn-dir  episode =ticks
  =goal> state proc-dir)
 
+(spp V-A-N1-attend-turn-direction :u 10)
+
+
 
 (defp V-A-N1-endcode-arrow 
   =goal> isa arrow-task  state proc-dir
@@ -18,6 +21,7 @@
   =temporal> isa time ticks =ticks
 ==> 
   !output! (Directions =dir)
+  -visual-location>
   =imaginal> dir =dir 
   -imaginal>
   !bind! =tm (+ =ticks 2)

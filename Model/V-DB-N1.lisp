@@ -10,14 +10,12 @@
 (defp V-DB-N1-attend-turn
  =goal> isa db-task state look-for-directions
  =visual-location> isa visual-location kind text > screen-x 500
- ?visual> state free buffer empty
+ ?visual> state free 
  =temporal> isa time ticks =ticks
 ==>
  +imaginal> isa turn-dir
  =goal> state encode
  +visual> isa move-attention screen-pos =visual-location)
-
-
 
 (defp V-DB-N1-endcode-direction1a
   =goal> isa db-task state encode
@@ -26,6 +24,7 @@
   =imaginal> isa turn-dir dir nil
   =temporal> isa time ticks =ticks
 ==>
+  -visual-location>
   =imaginal> dir =dir episode =ticks
   -imaginal>
   !bind! =tm (check-intersection-tm =ticks)
@@ -33,6 +32,9 @@
   !eval! (threaded-goal-reset (get-module goal))   ;;;
   +goal> isa arrow-task state find-arrow
   +goal> isa rehearse-task turn-dirs =imaginal state initial)
+
+(spp V-DB-N1-attend-turn :u 10)
+(spp V-DB-N1-endcode-direction1a :u 10)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;V-DB;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;don't look for new directions while in intersection
@@ -46,6 +48,7 @@
  !eval! (turn (get-interface))
  =temporal> isa time ticks =ticks
 ==>
+ -visual-location>
  =contextual> init nil jitter t
  -aural>
  +goal> isa arrow-task state find-arrow
@@ -58,6 +61,7 @@
  !eval! (null (turn (get-interface))) 
  =temporal> isa time ticks =ticks
 ==>
+ -visual-location>
  =contextual> init nil jitter t
  -aural>
  +goal> isa arrow-task state find-arrow
@@ -68,6 +72,7 @@
  =goal> isa db-task state check-intersection 
  =visual-location> isa rec-location kind rec name bottom-right  >= screen-y 330 < screen-y 475  ;;not 
 ==>
+ -visual-location>
  =goal> state look-for-directions)
 
 (spp V-DB-check-intersection1  :u 10)

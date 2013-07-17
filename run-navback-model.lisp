@@ -1,52 +1,86 @@
 
 (defparameter actr-done nil)
 (defvar *params* nil)
+(defvar *current-episode* nil)
+(defparameter *retrieve-error* 0)
 
-(defun run-m-1 (&optional (s "A-N3" ))
- (setf *params* '(.5 .2))
+(defun reset-vars()
+
+  (setf *perc-correct-turns* 0)
+
+  (setf *tot-dirs-list* nil)
+  (setf *tot-users-turns* nil)
+  (setf *total-perc-correct-turns* 0)
+
+  (setf *deviation-score* 0)
+  (setf *jitter-score* 0)
+  (setf *total-deviation-score* 0)
+  (setf *tot-total-devs* 0)
+  (setf *tot-list-arrow-jitter* nil)
+)
+
+(defun run-m-1 (&key (s "V-DB-N3" ) (strategy 'I) (params '(.5 .10  20 t) ))
+ (setf *params* params)
  (load (concatenate 'string (directory-namestring (get-load-path)) "Model/navback-model.lisp"))
  (setf actr-done nil)
- (run-model :cnd1 s))
+ (setf *retrieve-error* 0)
+ (run-model :cnd1 s :strategy strategy)
+ (while (null actr-done)
+        (sleep 5))
+ ;(write-log-file)
+ (format t " Results: ~S ~S ~S" *params* *save-results* *retrieve-error*))
  
 
-(defun run-m (&optional (n 1))
+(defun run-m (&optional (n 2) &key (cnds '(  "V-DB-N1"  "A-N1" "V-A-N1" "V-DB-N3"  "A-N3" "V-A-N3")) (strategy 'I) (v "~/navback-trace.lisp"  ))
   (let ((run-index 0)
         (params '(
-                  (.5 .15 )
-                  (.6 .15)
-                  (.5 .20 )
-                  (.6 .20)
-                  (.5 .25 )
-                  (.6 .25)
-                  (.5 .30)
-                  (.6 .3)
-                  )))
+                  ;(.5 .15 21 )
+                  ;(.6 .15 21 )
+                  ;(.5 .05 24 )
+                  (.5 .20 24 )
+                  ;(.6 .15)
+                 ; (.5 .20 15)
+                  ;(.5 .20 21)
+                  ;(.6 .20 21)
+                  (.5 .10 24 )
+                  ;(.5 .10 21)
+                  ;(.6 .10 21)                 
+                  ))
+        ) 
     (if (null (probe-file "~/NavbackModelRuns.txt"))
         (with-open-file (fs "~/NavbackModelRuns.txt" :direction :output)
           (write 'cnd :stream fs) (write-char #\tab fs)
+          (write 'str :stream fs) (write-char #\tab fs)
           (write 'bll :stream fs) (write-char #\tab fs)
           (write 'ans :stream fs) (write-char #\tab fs)
+          (write 'epi :stream fs) (write-char #\tab fs)
           (write 'dev :stream fs) (write-char #\tab fs)
-          (write 'acc :stream fs) (write-char #\newline fs)))
+          (write 'acc :stream fs) (write-char #\tab fs)
+          (write 'err :stream fs) (write-char #\newline fs)))
         
     (with-open-file (fs "~/NavbackModelRuns.txt" :direction :output :if-exists :append :if-does-not-exist :create)
       (dotimes (j n)
-        (dolist (s '(  "A-N3" )) ;; "V-A-N1" "V-DB-N1" "A-N1" "V-DB-N3" "V-A-N3" "A-N3")) ; "V-DB-N3")) ;
+        (dolist (s cnds)
           (dolist (p params)
             (format t "~%running ~S ~S" s p)
-            (setf *params* p)
+            (setf *params* (append p (list v)))
+            (reset-vars)
             (load (concatenate 'string (directory-namestring (get-load-path)) "Model/navback-model.lisp"))
+            (setf *retrieve-error* 0)
             (setf actr-done nil)
-            (run-model :cnd1 s)
+            (run-model :cnd1 s :strategy strategy)
             (while (null actr-done)
                    (sleep 5))
             (write-log-file)
             (format t " Results: ~S " *save-results* )
             (write (read-from-string s) :stream fs) (write-char #\tab fs)
+            (write strategy :stream fs) (write-char #\tab fs)
             (write (first p) :stream fs) (write-char #\tab fs)
             (write (second p) :stream fs) (write-char #\tab fs)
+            (write (third p) :stream fs) (write-char #\tab fs)
             (write (first *save-results*) :stream fs) (write-char #\tab fs)
-            (write (second *save-results*) :stream fs) (write-char #\newline fs)
+            (write (second *save-results*) :stream fs) (write-char #\tab fs)
+            (write *retrieve-error* :stream fs) (write-char #\newline fs)
             (setf *log* nil)
             (reset)
             (sleep 5)
@@ -61,7 +95,7 @@
 (defun log-info (lst)
   (push (list (get-internal-real-time) (mp-time) lst) *log*))
 
-(defun log-header (params)
+(defun log-header (params strategy)
   (let ((date-string nil))
     (multiple-value-bind
         (second minute hour day month year daylight zone other) 
@@ -76,6 +110,7 @@
    ; (log-info (list "CW-EVENT" "Unix-time" (unix-time)))
     (log-info (list "CW-EVENT" "ID" "Model"))
     (log-info (list "MODEL-EVENT" "PARAMS" params))
+    (log-info (list "MODEL-EVENT" "STRATEGY" strategy))
     
   ))
 
@@ -124,7 +159,8 @@
 
 
 (defun cw-speak (str &optional &key (voice 1) (model-string nil))
-  (new-word-sound str)
+ (new-word-sound str)
+    
   (lw-speak str :voice voice ))
 
 (defun get-model-cnd ()
@@ -134,25 +170,53 @@
          'visual-A)
         (t 'audio)))
 
+(defun print-audicon ()
+  (let ((module (get-module :audio)))
+    (if module
+        (progn
+          (format t "~%Sound event    Att  Detectable  Kind           Content           location     onset     offset delay     Sound ID")
+          (format t "~%-----------    ---  ----------  -------------  ----------------  --------     -----     ------ --------  --------")
+          
+          (dolist (x (current-audicon module))
+            (print-audio-feature x))) 
+      (print-warning "No audio module found"))))
+
+(defmethod print-audio-feature ((feat sound-event))
+  (format t "~%~15a~5A~12A~15A~18s~10a~8,3f   ~8,3f ~8,3f   ~a"
+    (ename feat)
+    (attended-p feat)
+    (detectable-p feat)
+    (kind feat)
+    (content feat)
+    (location feat)
+    (ms->seconds (onset feat))
+    (ms->seconds (offset feat))
+    ;(snd-string feat)
+    (ms->seconds (delay feat))
+    (sname feat)))
 
 
-(defun run-model (&key (rt *run-time* ) (cnd1 "V-A-N1") (cnd2 'between-subj-cnd) (dbg '(production declarative)) )
-  (setf +exp-cnd+ (make-instance cnd2))
+
+(defun run-model (&key (rt *run-time* ) (cnd1 "V-A-N1") (strategy 'I ) (dbg '(production declarative)) )
+  (setf +exp-cnd+ (make-instance 'between-subj-cnd))
   (setf (model? +exp-cnd+) cnd1)
   (set-exp-parameters cnd1 +exp-cnd+) 
   (setf  *run-time* rt)
   (setf +debug+ dbg)
-  (if (member cnd1 '("V-A-N1" "V-DB-N1" "A-N1") :test 'equal)
-      (progn (load (concatenate 'string (directory-namestring (get-load-path)) "Model/intersection1.lisp"))
-        (load (concatenate 'string (directory-namestring (get-load-path)) "Model/rehearse1.lisp")))
-    (progn (load (concatenate 'string (directory-namestring (get-load-path)) "Model/intersection3.lisp"))
-      (load (concatenate 'string (directory-namestring (get-load-path)) "Model/rehearse3.lisp"))))
-  (load (concatenate 'string (directory-namestring (get-load-path)) "Model/" cnd1 ".lisp"))
-  (log-header *params*)
+  (cond ((member cnd1 '("V-A-N1" "V-DB-N1" "A-N1") :test 'equal)
+         (load (concatenate 'string (directory-namestring (get-load-path)) "Model/intersection1.lisp"))
+         (load (concatenate 'string (directory-namestring (get-load-path)) "Model/rehearse1.lisp"))
+         (load (concatenate 'string (directory-namestring (get-load-path)) "Model/" cnd1)))
+        (t
+         (load (concatenate 'string (directory-namestring (get-load-path)) "Model/intersection3.lisp"))
+         (load (concatenate 'string (directory-namestring (get-load-path)) "Model/rehearse3.lisp"))
+         (load (concatenate 'string (directory-namestring (get-load-path)) "Model/" 
+                     (if (eql strategy 'R) cnd1 (concatenate 'string cnd1 "-I"))  ".lisp"))))
+  (log-header *params* strategy)
   
   
   
-  (add-dm-fct `((g1 isa ,(if (member cnd1 '("V-DB-N3" "V-DB-N1") :test 'equal) 'start-both 'start-jitter))))
+  (add-dm-fct `((g1 isa ,(if (member cnd1 '("V-DB-N3-I" "V-DB-N3" "V-DB-N1") :test 'equal) 'start-both 'start-jitter))))
   (goal-focus g1)
   (drive))
 
@@ -210,7 +274,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmethod display-drive-directions :after (str (pane drive-display-pane) )
-  (format +actr-output+ "~%New-Directions ~S" str) 
+  (setf *current-direction* (direction1 (get-interface)))
+  ;(format +actr-output+ "~%New-Directions ~S" str) 
 
   (capi:apply-in-pane-process pane 'my-proc-display 'directions str) )
 
@@ -403,7 +468,7 @@
 (defmethod vis-loc-to-obj :around ((self screen-arrow) loc)
   (let ((v-o (call-next-method)))
     (setf (chunk-vis-obj-freq v-o) (chunk-vis-obj-freq loc))
-    (when (member (model? +exp-cnd+) '("V-A-N1" "V-A-N3") :test 'equal)
+    (when (member (model? +exp-cnd+) '("V-A-N1" "V-A-N3" "V-A-N3-I") :test 'equal)
       
         (set-chunk-slot-value-fct  v-o 'dir (chunk-slot-value-fct loc 'dir)))
     v-o))

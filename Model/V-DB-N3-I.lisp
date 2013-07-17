@@ -1,22 +1,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;v-DB-N3;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(push :NAVBACK-R *features*)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defp V-DB-N3-look-for-directions
  =goal> isa db-task state look-for-directions 
  ?imaginal>  state free 
  ?visual-location> buffer empty
- =contextual> isa mnt 
  ==>
-  =contextual> jitter nil
  +visual-location> isa visual-location :attended nil screen-y lowest kind text > screen-x 500)
 
-(defp V-DB-N3-look-for-directions-error
- =goal> isa db-task state look-for-directions 
- ?imaginal>  state free 
- ?visual-location> state error
- =contextual> isa mnt 
- ==>
- =contextual> jitter t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defp V-DB-N3-attend-turn-initial
@@ -97,6 +88,9 @@
   +goal> isa arrow-task state find-arrow
   +goal> isa rehearse-task  state initial turn-dirs =imaginal )
 
+
+
+
 (defp V-DB-N3-encode-direction3-error
  =goal> isa db-task state encode3a
  =contextual> isa mnt
@@ -105,6 +99,7 @@
  ?visual> state error
 ==>
  -goal>
+ -visual-location>
  !bind! =dir (nth (random 3) '("left" "right" "forward"))
  =imaginal> dir3 =dir episode =ticks
  -imaginal>
@@ -123,6 +118,7 @@
  =temporal> isa time ticks =ticks
 ==>
  -goal>
+ -visual-location>
  =imaginal> dir3 =dir episode =ticks
  -imaginal>
  !output! (last =dir)
@@ -138,102 +134,74 @@
 
 (defp V-DB-N3-attend-turn-not-initial
  =goal> isa db-task state look-for-directions
- =contextual> isa mnt  rehearse nil init nil jitter nil
+ =contextual> isa mnt  rehearse nil init nil
  =visual-location> isa visual-location kind text > screen-x 500
- ?visual> state free 
+ ?visual> state free
 ==>
-
+  =contextual> jitter nil
  =goal> state encode
-  +retrieval> isa turn-list dir3 nil 
  +visual> isa move-attention screen-pos =visual-location)
 
 (defp* V-DB-N3-encode-direction-not-initial
  =goal> isa db-task state encode
  =contextual> isa mnt rehearse nil init nil
  =visual> isa text value =dir
- =retrieval> isa turn-list dir3 nil
+ =imaginal> isa turn-list dir3 nil
  =temporal> isa time ticks =ticks
 ==>
  -goal>
  !output! (new-direction =dir)
- =retrieval> dir3 =dir episode =ticks
- -retrieval>
+ =imaginal> dir3 =dir episode =ticks
+ -imaginal>
  -visual-location>
  !eval! (setf *current-episode* =ticks)
  !bind! =tm (check-intersection-tm =ticks)
   =contextual>  intersection =tm jitter t rehearse =ticks
   !eval! (threaded-goal-reset (get-module goal))
   +goal> isa arrow-task state find-arrow
-  +goal> isa rehearse-task  state initial turn-dirs =retrieval)
+  +goal> isa rehearse-task  state initial turn-dirs =imaginal)
  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;V-DB;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;don't look for new directions while in intersection
 ;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defp *rehearse-task-encode2-only
- =goal> isa rehearse-task state encode2
- =aural> isa sound
- ?aural> state free
- =retrieval> isa turn-list dir3 nil
- =contextual> isa mnt
- =temporal> isa time ticks =ticks
-==> 
- !eval! (threaded-goal-reset (get-module goal))
- -visual-location>
- =contextual> rehearse nil jitter t
- +goal> isa arrow-task state find-arrow
-
- !bind! =tm (+ =ticks 1)
- +goal> isa db-task state look-for-directions monitor-tm =tm)
-
 (pdisable-fct '(*turn-complete))
 
-(defp *turn-complete1
+(defp *turn-complete-in-intersection
  =goal> isa arrow-task state turn-done
  =contextual> isa mnt
  =retrieval> isa turn-list dir2 =dir2 dir3 =dir3
-==>
- +imaginal> isa turn-list dir1 =dir2 dir2 =dir3
- =goal> state turn-done2
- )
-
-(defp *turn-complete2a
- =goal> isa arrow-task state turn-done2
- =contextual> isa mnt
- =imaginal> isa turn-list dir3 nil
- =temporal> isa time ticks =ticks
  !eval! (turn (get-interface))
+ =temporal> isa time ticks =ticks
 ==>
- =imaginal> episode =ticks
- -imaginal>
+ -visual-location>
+ =contextual> init nil jitter t
  -aural>
- =contextual> init nil jitter t rehearse =ticks
- +goal> isa rehearse-task state initial turn-dirs =imaginal
+ +imaginal> isa turn-list dir1 =dir2 dir2 =dir3
  +goal> isa arrow-task state find-arrow
-  !bind! =tm (+ =ticks 1)
- +goal> isa db-task state check-intersection  monitor-tm =tm)
+ !bind! =tm (+ =ticks 1)
+ +goal> isa db-task state check-intersection  monitor-tm =tm )
 
 (defp *turn-complete-not-in-intersection
- =goal> isa arrow-task state turn-done2
+ =goal> isa arrow-task state turn-done
  =contextual> isa mnt
- =imaginal> isa turn-list dir3 nil
+ =retrieval> isa turn-list dir2 =dir2 dir3 =dir3
  !eval! (null (turn (get-interface))) 
  =temporal> isa time ticks =ticks
 ==>
- =imaginal> episode =ticks
- -imaginal>
- =contextual> init nil jitter t rehearse =ticks
+ -visual-location>
+ =contextual> init nil jitter t
  -aural>
+ +imaginal> isa turn-list dir1 =dir2 dir2 =dir3
  +goal> isa arrow-task state find-arrow
- +goal> isa rehearse-task state initial turn-dirs =imaginal
  !bind! =tm (+ =ticks 1)
  +goal> isa db-task state look-for-directions monitor-tm =tm)
-;;;;;;;;;;
+
 (defp V-DB-check-intersection1 
  =goal> isa db-task state check-intersection 
  =visual-location> isa rec-location kind rec name bottom-right  >= screen-y 330 < screen-y 475  ;;not 
 ==>
+ -visual-location>
  =goal> state look-for-directions)
 
 (spp V-DB-check-intersection1  :u 10)

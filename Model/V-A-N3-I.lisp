@@ -1,53 +1,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;V-A-N3;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(push :NAVBACK-R *features*)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defp *rehearse-task-encode2-only
- =goal> isa rehearse-task state encode2
- ;=aural> isa sound
- ?aural> state free
- =retrieval> isa turn-list dir3 nil
- =contextual> isa mnt
-==> 
--goal>
--aural>
- =contextual> rehearse nil)
-
-
-(pdisable-fct '(*turn-complete))
-
-(defp *turn-complete2
- =goal> isa arrow-task state turn-done
- =contextual> isa mnt
- =retrieval> isa turn-list dir2 =dir2 dir3 =dir3
-==>
- +imaginal> isa turn-list dir1 =dir2 dir2 =dir3
- =goal> state turn-done2)
-
-
-
-(defp *turn-complete2a
- =goal> isa arrow-task state turn-done2
- =contextual> isa mnt
- =imaginal> isa turn-list dir3 nil
- =temporal> isa time ticks =ticks
-==>
- -visual-location>
- =imaginal> episode =ticks
- -imaginal>
- -aural>
- =contextual> init nil jitter t rehearse =ticks
- +goal> isa rehearse-task state initial turn-dirs =imaginal
- +goal> isa arrow-task state find-arrow)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defp V-A-N3-attend-direction-one ;;;Fill 1 
  =goal> isa arrow-task  state proc-arrow 
  =contextual> isa mnt rehearse nil init nil
  =visual> isa arrow dir =dir
+ =imaginal> isa turn-list dir3 nil
  ?retrieval> state free
 ==>
- +imaginal> isa turn-list 
  =goal>   state last
  +retrieval> isa meaning sym =dir)
 
@@ -57,38 +16,15 @@
 (defp V-A-N3-endcode-arrow-one 
   =goal> isa arrow-task state last
   =contextual> isa mnt rehearse nil init nil
+  =imaginal> isa turn-list dir3 nil 
   =retrieval> isa meaning means =dir
-  =imaginal> isa turn-list dir3 nil
   =temporal> isa time ticks =ticks
 ==> 
+  -visual-location>
   !eval! (clear-dir)
   =imaginal> dir3 =dir episode =ticks
-  !bind! =tm (- =ticks (third *params*))
-  +retrieval> isa turn-list dir3 nil > episode =tm 
-  =goal> state last1
-)
-
-(defp V-A-N3-endcode-arrow-one-a-error
-  =goal> isa arrow-task state last1
-  =contextual> isa mnt rehearse nil init nil
-  =imaginal> isa turn-list
-  ?retrieval> state error
-==>
-  !eval! (incf *retrieve-error*)
-  +retrieval> isa turn-list dir3 nil)
-
-(defp V-A-N3-endcode-arrow-one-a
-  =goal> isa arrow-task state last1
-  =contextual> isa mnt rehearse nil init nil
-  =imaginal> isa turn-list
-  =retrieval> isa turn-list dir1 =dir1 dir2 =dir2
-  =temporal> isa time ticks =ticks
-==>
-  -visual-location>
-  =imaginal> dir1 =dir1 dir2 =dir2 episode =ticks
   -imaginal>
   !bind! =tm (check-intersection-tm =ticks)
-  !eval! (setf *current-episode* =ticks)
   =contextual>  intersection =tm jitter t rehearse =ticks
   !eval! (threaded-goal-reset (get-module goal))
   +goal> isa arrow-task state find-arrow
@@ -153,7 +89,7 @@
  
 (defp V-A-N3-get-direction-3 ;;; Fill 3
  =goal> isa arrow-task state last
- =contextual> isa mnt init t
+ =contextual> isa mnt 
  =visual-location> isa visual-location kind arrow
  ?visual> state free
 ==>
@@ -162,7 +98,7 @@
 
 (defp V-A-N3-attend-direction-3 
  =goal> isa arrow-task state last
- =contextual> isa mnt init t
+ =contextual> isa mnt 
  =visual> isa arrow dir =dir
  ?visual> state free
 ==>
@@ -172,7 +108,7 @@
 
 (defp V-A-N3-Missed-3
  =goal> isa arrow-task state last
- =contextual> isa mnt init t
+ =contextual> isa mnt 
  =visual> isa arrow dir nil
 ==>
  !bind! =dir (get-random-dir)
@@ -184,7 +120,7 @@
   =imaginal> isa turn-list dir2 =dir2 dir3 nil
   =retrieval> isa meaning means =dir
   =temporal> isa time ticks =ticks
-  =contextual> isa mnt init t
+  =contextual> isa mnt 
 ==> 
   !output! (Last =dir)
   ;!eval!  !eval! (chk-dir 'direction3 =dir)

@@ -6,8 +6,6 @@
  ?visual> state free
   =visual-location> isa visual-location kind arrow screen-x =x  screen-y =y
 ==>
- !output!(goal = =ticks1 temporal = =ticks =x =y)
- 
  =goal> state calc-pos   
  +visual-location> isa rec-location name bottom-right )
 
@@ -20,6 +18,7 @@
  ?retrieval> state free
   =temporal> isa time ticks =ticks
 ==>
+ -visual-location>
  !bind! =tm (check-intersection-tm =ticks)
  =goal> state find-arrow
  =contextual> intersection =tm
@@ -36,31 +35,52 @@
    =visual-location> isa rec-location kind rec name bottom-right  
   ?retrieval> state free
 ==>
+ -visual-location>
  -aural>
  !eval! (incf rtotal)
- +retrieval> isa turn-list
+ +retrieval> isa turn-list 
  =goal> state recall-dir 
  =contextual> intersection nil rehearse nil 
  )
 
-(defp *intersection-error
+(defp *intersection-error1
+ =goal> isa arrow-task state recall-dir
+ =contextual> isa mnt
+ ?manual> state free
+; ?retrieval> state error
+ =retrieval> isa turn-list dir2 =dir2 dir3 nil
+==>
+ !eval! (incf *retrieve-error*)
+ !eval! (format +actr-output+ "~%Wrong retrieval")
+ !bind! =dir (nth (random 3) '("left" "right" "forward"))   ;;;guess
+ =retrieval> dir3 =dir
+ =goal> state =dir
+ =contextual> intersection nil rehearse nil
+ )
+
+(spp *intersection-error1 :u 10)
+
+(defp *intersection-error2
  =goal> isa arrow-task state recall-dir
  =contextual> isa mnt
  ?manual> state free
  ?retrieval> state error
 ==>
- !eval! (incf rerror)
- !bind! =dir (nth (random 3) '("left" "right" "forward"))   ;;;guess
- =goal> state =dir
- =contextual> intersection nil rehearse nil
+ !eval! (format +actr-output+ "~%Retrieval Error")
+ +retrieval> isa turn-list 
+ =goal> state recall-dir 
+ !eval! (incf *retrieve-error*)
  )
+
 
 (defp do-turn
  =goal> isa arrow-task state recall-dir
- 
- =retrieval> isa turn-list dir1 =turndir
+ =temporal> isa time ticks =ticks
+ =retrieval> isa turn-list dir1 =turndir episode =e
  ?manual> state free
 ==>
+!bind! =x *current-direction*
+ !output! (Turn-retrieval =ticks =e =turndir =x )
  =retrieval>
  =goal> state  =turndir )
  
@@ -135,7 +155,6 @@
  =contextual> isa mnt
  !eval! (null (turn (get-interface)))
 ==>
- 
  =goal> state turn-done)
 
 (defp *turn-complete
@@ -143,6 +162,7 @@
  =contextual> isa mnt
  =retrieval> isa turn-list dir2 =dir2 dir3 =dir3
 ==>
+ -visual-location>
  =contextual> init nil jitter t
  -aural>
  +imaginal> isa turn-list dir1 =dir2 dir2 =dir3

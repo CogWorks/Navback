@@ -1,4 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;A-N3;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(push :NAVBACK-R *features*)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defp *rehearse-task-encode2-only
  =goal> isa rehearse-task state encode2
  =aural> isa sound
@@ -17,8 +19,6 @@
  =contextual> isa mnt
  =retrieval> isa turn-list dir2 =dir2 dir3 =dir3
 ==>
- =contextual> init nil jitter t
- -aural>
  +imaginal> isa turn-list dir1 =dir2 dir2 =dir3
  =goal> state turn-done2)
 
@@ -28,7 +28,9 @@
  =imaginal> isa turn-list dir3 nil
  =temporal> isa time ticks =ticks
 ==>
+ =imaginal> episode =ticks
  -imaginal>
+ -aural>
  =contextual> init nil jitter t rehearse =ticks
  +goal> isa rehearse-task state initial turn-dirs =imaginal
  +goal> isa arrow-task state find-arrow)
@@ -39,7 +41,9 @@
  =contextual> isa mnt jitter t init nil
  =aural-location> isa audio-event kind word location external
  ?aural> state free
+ =contextual> isa mnt
 ==>
+ =contextual> rehearse nil
  +retrieval> isa turn-list dir3 nil ;;;
  +aural> isa sound event =aural-location
 )
@@ -51,6 +55,7 @@
   =temporal> isa time ticks =ticks
 ==>
   !output! (New Last =str)
+  !eval! (setf *current-episode* =ticks)
   =retrieval> dir3 =str episode =ticks
   -retrieval>
   !bind! =tm (+ =ticks 2)
@@ -117,6 +122,7 @@
  !output! (Last =str)
  =imaginal> dir3 =str episode =ticks
  -imaginal>
+ !eval! (setf *current-episode* =ticks)
  !bind! =tm (+ =ticks 2)
   =contextual> intersection =tm rehearse =ticks
   +goal> isa rehearse-task  state initial turn-dirs =imaginal

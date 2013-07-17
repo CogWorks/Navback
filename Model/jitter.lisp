@@ -2,6 +2,7 @@
  =goal> isa arrow-task  state find-arrow
  =contextual> isa mnt jitter t
  ?manual> state free
+ ?visual-location> buffer empty
 ==>
  =goal> state attend-arrow
  +visual-location> isa visual-location kind arrow)
@@ -12,6 +13,7 @@
  ?visual> state free
  ?visual-location> buffer requested
 ==>
+ =visual-location>
 ; !output! (attend arrow = =x )
  =goal> state proc-arrow
  +visual> isa move-attention screen-pos =visual-location)
@@ -22,6 +24,7 @@
 ==>
  +visual> isa clear
  -visual-location>
+ -visual>
  =goal> state find-arrow
 )
 
@@ -31,6 +34,7 @@
  ?manual> state free
 ==>
 ; !output! (proc-arrow = =x left)
+ -visual-location>
  +manual> isa press-key key "d"
  =goal> state find-arrow
 )
@@ -41,8 +45,9 @@
  ?manual> state free
 ==>
  ;!output! (proc-arrow = =x right)
+ -visual-location>
  +manual> isa press-key key "a"
-=goal> state find-arrow
+ =goal> state find-arrow
 )
 
 (defp *jitter-middle
@@ -52,4 +57,5 @@
 ==>
 ;!output! (proc-arrow = =x middle)
 =goal> state find-arrow
+-visual-location>
 )
