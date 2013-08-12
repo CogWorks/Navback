@@ -63,8 +63,8 @@
 ==> 
   !eval! (clear-dir)
   =imaginal> dir3 =dir episode =ticks
-  !bind! =tm (- =ticks (third *params*))
-  +retrieval> isa turn-list dir3 nil > episode =tm 
+ 
+  +retrieval> isa turn-list dir3 nil
   =goal> state last1
 )
 
@@ -74,7 +74,6 @@
   =imaginal> isa turn-list
   ?retrieval> state error
 ==>
-  !eval! (incf *retrieve-error*)
   +retrieval> isa turn-list dir3 nil)
 
 (defp V-A-N3-endcode-arrow-one-a

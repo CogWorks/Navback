@@ -16,7 +16,7 @@
      :conflict-set-hook cs-hook :DIGIT-DETECT-DELAY .150
 )
 
-(sgp-fct `(:bll ,(first *params*) :ans ,(second *params*) :v ,(fourth *params*)))
+(sgp-fct `(:bll ,(first *params*) :ans ,(second *params*) :v ,(third *params*)))
 
 (set-audloc-default :location external :attended nil)
 
