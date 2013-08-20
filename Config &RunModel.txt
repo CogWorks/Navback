@@ -1,0 +1,34 @@
+Load ACT-R and Navback environment and model by double-clicking load-act-r-6.xfasl. (if load-act-r-6.xfasl doesn't exist, 
+open load-act-r-6.lisp and compile and load this file) 
+
+The config-model GUI allows the user to run a single model or a series of models with different :bll and :ans parameters.
+
+To bring up the GUI, type (config-model) in the listener after ACT-R is loaded.
+
+The number of iterations field (default 1) is the number of times to run a single model or the number of times to repeat
+the series of models specified by the choices below. 
+
+The Choose conditions field allows the user to choose one or more between subject conditions. The series of models generated 
+by the parameter settings will be run for each condition selected.
+
+The Paramter value fields allow the user to run a series of model with different parameter settings for the :bll and :ans parameters,
+
+The initial value is the value of the parameter for the first of the series,
+the iteration value is the amount to increase or decrease the parameter by, and
+the number of iterations specifies how many time to do this.
+All combinations of the two parameters are generated.
+
+Examples
+  To run a range of parameters.
+   set :bll initial value = .5, iteration value = .01 and number of iterations = 1,
+   set :ans initial value = .2, iteration value = .05 and number of iterations = 1 
+  A series of six model runs, :bll .5 :ans .2, :bll .5 :ans .25, :bll .6 :ans .2, :bll .6 :ans .25 would be generated.
+
+  To run a single model n times:
+    Set number of iterations = n, 
+    choose a single between subject condition,
+    set :bll number of iterations to 0,
+    set :ans number of iterations to 0.
+
+The log file field, if selected causes a log file to be written to the ACT-R user-loads/MNT/DATA folder.
+The trace field, if selected causes the trace to be written to the file ACT-R user-loads/MNT/DATA/navback-trace.lisp

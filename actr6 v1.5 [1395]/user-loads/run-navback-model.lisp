@@ -1,8 +1,8 @@
 
-(defparameter actr-done nil)
+(defparameter *actr-done* nil)
 (defvar *params* nil)
-(defvar *current-episode* nil)
 (defparameter *retrieve-error* 0)
+(defvar *current-episode* 0)
 
 (defun reset-vars()
 
@@ -22,29 +22,187 @@
 (defun run-m-1 (&key (s "V-A-N3" ) (strategy 'R) (params '(.5 .10 t) ))
  (setf *params* params)
  (load (concatenate 'string (directory-namestring (get-load-path)) "Model/navback-model.lisp"))
- (setf actr-done nil)
+ (setf *actr-done* nil)
  (setf *retrieve-error* 0)
  (run-model :cnd1 s :strategy strategy)
- (while (null actr-done)
-        (sleep 5))
+ (mp:process-wait-local-with-periodic-checks "running model" 5  (lambda() *actr-done*))
+ 
  ;(write-log-file)
  (format t " Results: ~S ~S ~S" *params* *save-results* *retrieve-error*))
+
+(capi:define-interface modelConfig ()
+ ((cnds :initform nil :accessor cnds)
+  (files :initform nil :accessor files)
+  (bll :initform nil :accessor bll)
+  (ans :initform nil :accessor ans)
+  (so :initform nil :initarg :so :accessor so))
+ (:panes
+  (num-iter
+    capi:text-input-pane
+    :accessor num-iter
+    :text "1"
+    :title "Enter number of iterations: "
+    :max-characters 2
+    :visible-max-width '(:character 2)
+    )
+  (cnds-panel
+    capi:check-button-panel
+    :title "Choose condition(s):"
+    :items '("V-A-N1" "V-A-N3" "V-DB-N1" "V-DB-N3" "A-N1" "A-N3")
+    :layout-class 'capi:column-layout
+    :callback-type :data-interface
+    :selection-callback 'cnd-selection-callback
+    :extend-callback    'cnd-extend-callback
+    :retract-callback   'cnd-retract-callback)
+
+  (bll-val
+    capi:text-input-pane
+    :text ".5"
+    :accessor bll-val
+    :title "Enter initial :bll value: "
+    :max-characters 4
+    :visible-max-width '(:character 4))
+  (bll-iter
+    capi:text-input-pane
+    :accessor bll-iter
+    :text ".05"
+    :title "Enter :bll iteration value: "
+    :max-characters 4
+    :visible-max-width '(:character 4))
+
+  (bll-num
+    capi:text-input-pane
+    :accessor bll-num
+    :text "2"
+    :title "Enter :bll number of iterations: "
+    :max-characters 4
+    :visible-max-width '(:character 4))
+
+  (ans-val
+    capi:text-input-pane
+    :accessor ans-val
+    :text ".1"
+    :title "Enter initial :ans value: "
+    :max-characters 4
+    :visible-max-width '(:character 4))
+  (ans-iter
+    capi:text-input-pane
+    :accessor ans-iter
+    :text ".01"
+    :title "Enter :ans iteration value: "
+    :max-characters 4
+    :visible-max-width '(:character 4))
+  (ans-num
+    capi:text-input-pane
+    :accessor ans-num
+    :text "2"
+    :title "Enter :ans number of iterations value: "
+    :max-characters 4
+    :visible-max-width '(:character 4))
+
+  (files-panel
+    capi:check-button-panel
+    :title "Choose File(s) to create: "
+    :items '("log" "trace")
+    :layout-class 'capi:column-layout
+    :callback-type :data-interface
+    :selection-callback 'f-selection-callback
+    :extend-callback    'f-extend-callback
+    :retract-callback   'f-retract-callback)
+
+  (run-button
+    capi:push-button
+    :text "Run Model"
+    :data :push-button
+    :callback-type :data-interface
+    :selection-callback 'run-button-selection-callback
+    )
+  )
+ (:layouts
+  (row1 capi:row-layout '(nil num-iter nil) :x-adjust :centre)
+  (row2 capi:row-layout '(nil cnds-panel nil  files-panel nil))
+  (row3 capi:row-layout '(bll-val bll-iter bll-num))
+  (row4 capi:row-layout '(ans-val ans-iter ans-num))
+  (row5 capi:row-layout '(nil run-button nil))
+  (main capi:column-layout '(row1 nil row2 row3 row4 nil row5))
+  )
+ (:default-initargs
+  :layout 'main
+  :title "Configure Navback Model"))
+
+(defun button-callback (type sn data interface)
+  (case type
+    (selected
+     (push data (slot-value interface sn)))
+    (retracted
+     (setf (slot-value interface sn) (remove data (slot-value interface sn) )))
+    (otherwise (break))))
+
+(defun f-selection-callback (&rest args)
+  (apply 'button-callback 'selected 'files args))
+
+
+(defun f-retract-callback (&rest args)
+  (apply 'button-callback 'retracted 'files args))
+
+
+
+(defun cnd-selection-callback (&rest args) 
+  (apply 'button-callback 'selected 'cnds args))
+
+
+
+(defun cnd-retract-callback (&rest args)
+  (apply 'button-callback 'retracted 'cnds args))
+
+(defun get-num( str obj)
+  (let ((v (ignore-errors (read-from-string (capi:text-input-pane-text obj)))))
+    (cond ((numberp v) v)
+          (t
+           (capi:display-message (format nil "Invalid ~A " str))
+           nil))))
+
+(defun run-button-selection-callback (data interface)
+  (declare (ignore data))
+  (capi:destroy interface)
+  (let ((bllv (get-num "bll initial value" (bll-val interface)))
+        (blli (get-num "bll iteration value" (bll-iter interface)))
+        (blln (get-num "bll number of iterations" (bll-num interface)))
+        (ansv (get-num "ans initial value" (ans-val interface)))
+        (ansi (get-num "ans iteration value" (ans-iter interface)))
+        (ansn (get-num "ans number of iterations" (ans-num interface)))
+        (num (get-num "number of iterations" (num-iter interface))))
+    (when (and bllv blli blln ansv ansi ansn num)
+      (setf (bll interface) (list bllv blli blln))
+      (setf (ans interface) (list ansv ansi ansn))
+      (let ((params nil)
+            (val nil))
+        (dotimes (i (+ blln 1))
+          (setq val (+ bllv (* blli i)))
+          (dotimes (j (+ ansn 1))
+            (push (list val (+ ansv (* ansi j))) params)
+            ))
+        (format (so interface) "~%params ~S" params)
+        (mp:process-run-function "model run" '() 'run-m num :params (reverse params) :cnds (cnds interface) :strategy 'I 
+                                                            :v (if (null (member "trace" (files interface) :test 'equal)) t)
+                                                            :log (if (member "log" (files interface) :test 'equal) t)
+                                                            :so (so interface))))))
+                
+(defun config-model()
+  (let ((win (make-instance 'modelConfig :so *standard-output*)))
+    (capi:display win)
+    win))
+
  
 
-(defun run-m (&optional (n 2) &key (cnds '(  "V-DB-N1"  "A-N1" "V-A-N1" "V-DB-N3"  "A-N3" "V-A-N3")) (strategy 'I) (v "~/navback-trace.lisp"  ))
+(defun run-m (&optional (n 2) &key (cnds '(  "V-DB-N1"  "A-N1" "V-A-N1" "V-DB-N3"  "A-N3" "V-A-N3")) (strategy 'I) 
+                                   (v (concatenate 'string (directory-namestring (get-load-path)) "MNT/Data/" "navback-trace.lisp"  )) 
+                                   (params '((.5 .10))) (log t) (so *standard-output*))
+  (setf *standard-output* so)
   (let ((run-index 0)
-        (params '(
-                  (.5 .10 )
-                  ;(.5 .15)
-                  ;(.5 .05)
-                   (.5 .20)
-                  ;(.6 .15)
-                  ;(.6 .20)
-                  ;(.6 .10)                 
-                  ))
-        ) 
-    (if (null (probe-file "~/NavbackModelRuns.txt"))
-        (with-open-file (fs "~/NavbackModelRuns.txt" :direction :output)
+        (fn (concatenate 'string (directory-namestring (get-load-path))  "MNT/Data/" "NavbackModelRuns.txt"))) 
+    (if (null (probe-file fn) )
+        (with-open-file (fs fn :direction :output)
           (write 'cnd :stream fs) (write-char #\tab fs)
           (write 'str :stream fs) (write-char #\tab fs)
           (write 'bll :stream fs) (write-char #\tab fs)
@@ -63,11 +221,10 @@
             (reset-vars)
             (load (concatenate 'string (directory-namestring (get-load-path)) "Model/navback-model.lisp"))
             (setf *retrieve-error* 0)
-            (setf actr-done nil)
+            (setf *actr-done* nil)
             (run-model :cnd1 s :strategy strategy)
-            (while (null actr-done)
-                   (sleep 5))
-            (write-log-file)
+            (mp:process-wait-local-with-periodic-checks "running model" 5  (lambda() *actr-done*))
+            (if log (write-log-file))
             (format t " Results: ~S " *save-results* )
             (write (read-from-string s) :stream fs) (write-char #\tab fs)
             (write strategy :stream fs) (write-char #\tab fs)
@@ -221,7 +378,7 @@
   (setq +actr-output+ so) 
    
   (run-until-condition (lambda()  (null (capi:interface-visible-p (get-interface)))) :real-time t)
-  (setf actr-done t)
+  (setf *actr-done* t)
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -475,7 +632,7 @@
 (defmethod device-handle-keypress :before ((device capi:interface) key)
   (if (member 'keypress +debug+)  (log-info `(pressed-key ,key))))
 
-(defvar *current-episode* 0)
+
 (defun my-trace-filter(e)
   (if (and (eql (evt-action e) 'set-buffer-chunk) (eql (evt-module e) 'declarative)
              (member 'declarative +debug+))
